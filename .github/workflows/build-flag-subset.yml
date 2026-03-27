@@ -84,15 +84,37 @@ jobs:
             - name: ✂️ Extract flag emoji subset + convert to WOFF2
               run: |
                   mkdir -p dist
-                  echo "✂️ 提取国旗字符子集 (U+1F1E6-1F1FF)..."
-                  pyftsubset "build/Twemoji Mozilla.ttf" \
-                    --unicodes=U+1F1E6-1F1FF \
-                    --output-file="dist/${{ env.FONT_NAME }}.woff2" \
-                    --flavor=woff2 \
-                    --no-layout-closure \
-                    --hinting-tables=none \
-                    --verbose
-                  cp "build/Twemoji Mozilla.ttf" "dist/${{ env.FONT_NAME }}.ttf"
+                  cat > subset_colr.py << 'PYEOF'
+                    import fontforge
+                    import sys
+                    print("打开字体文件...")
+                    font = fontforge.open("build/Twemoji Mozilla.ttf")
+                    flag_start = 0x1F1E6
+                    flag_end = 0x1F1FF
+                    glyphs_to_keep = set()
+                    for glyph in font:
+                        try:
+                            code = ord(glyph)
+                            if flag_start <= code <= flag_end:
+                                glyphs_to_keep.add(glyph)
+                                print(f"保留：{glyph} (U+{code:04X})")
+                            except:
+                                pass
+                    print(f"\n共找到 {len(glyphs_to_keep)} 个国旗字形")
+                    for glyph in font:
+                        if glyph not in glyphs_to_keep:
+                            try:
+                                font.selection[glyph] = False
+                            except:
+                                pass
+                    font.generate("dist/TwemojiCountryFlags.ttf", flags=("opentype"))
+                    font.close()
+                    print("✅ FontForge 子集化完成")
+                    PYEOF
+                    fontforge -script subset_colr.py
+                    echo "转换为 WOFF2 格式..."
+                    woff2_compress "dist/TwemojiCountryFlags.ttf"
+                    mv "dist/TwemojiCountryFlags.ttf.woff2" "dist/TwemojiCountryFlags.woff2"
                   echo "📊 构建结果:"
                   ls -lh dist/
 
@@ -100,7 +122,7 @@ jobs:
                   python3 << 'PYEOF'
                   from fontTools.ttLib import TTFont
                   try:
-                      font = TTFont('dist/${{ env.FONT_NAME }}.woff2')
+                      font = TTFont('dist/TwemojiCountryFlags.woff2')
                       glyph_count = len(font.getGlyphOrder())
                       print(f'✅ 字体有效，包含 {glyph_count} 个字形')
                       font.close()
