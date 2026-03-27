@@ -86,7 +86,7 @@ jobs:
                   mkdir -p dist
                   echo "✂️ 提取国旗字符子集 (U+1F1E6-1F1FF)..."
                   pyftsubset "build/Twemoji Mozilla.ttf" \
-                    --unicodes=${{ env.UNICODE_RANGE }} \
+                    --unicodes=U+1F1E6-1F1FF \
                     --output-file="dist/${{ env.FONT_NAME }}.woff2" \
                     --flavor=woff2 \
                     --no-layout-closure \
