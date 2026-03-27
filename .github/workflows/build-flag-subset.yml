@@ -148,14 +148,9 @@ jobs:
                       - Unicode 范围：${{ env.UNICODE_RANGE }} (Flag Emoji)
                       - 格式：WOFF2 (压缩) + TTF (完整备份)
 
-                      ## 🔗 CDN 使用示例
-                      ```css
-                      @font-face {
-                        font-family: 'Windows11FlagFix';
-                        src: url('https://cdn.jsdelivr.net/gh/${{ github.repository_owner }}/twemoji-colr@${{ github.event.inputs.version }}/dist/${{ env.FONT_NAME }}.woff2') format('woff2');
-                        unicode-range: U+1F1E6-1F1FF;
-                      }
-                      ```
+                      ## 🔗 下载链接
+                      - WOFF2: https://github.com/${{ github.repository }}/releases/latest/download/${{ env.FONT_NAME }}.woff2
+                      - TTF: https://github.com/${{ github.repository }}/releases/latest/download/${{ env.FONT_NAME }}.ttf
                   files: |
                       dist/${{ env.FONT_NAME }}.woff2
                       dist/${{ env.FONT_NAME }}.ttf
