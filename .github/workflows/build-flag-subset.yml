@@ -73,9 +73,9 @@ jobs:
                   echo "📊 构建结果:"
                   ls -lh build/
                   # 验证字体文件生成
-                  if [ -f "build/Twemoji Mozilla.ttf" ]; then
+                  if [ -f "build/${{ env.FONT_NAME }}.ttf" ]; then
                     echo "✅ 字体文件生成成功"
-                    file "build/Twemoji Mozilla.ttf"
+                    file "build/${{ env.FONT_NAME }}.ttf"
                   else
                     echo "❌ 字体文件生成失败"
                     exit 1
@@ -83,54 +83,58 @@ jobs:
 
             - name: ✂️ Extract flag emoji subset + convert to WOFF2
               run: |
-                    mkdir -p dist
-                    cat > subset_colr.py << 'PYEOF'
-                    import fontforge
-                    import sys
-                    print("打开字体文件...")
-                    font = fontforge.open("build/Twemoji Mozilla.ttf")
-                    flag_start = 0x1F1E6
-                    flag_end = 0x1F200
-                    glyphs_to_keep = set()
-                    for glyph in font:
-                        try:
-                            code = ord(glyph)
-                            if flag_start <= code <= flag_end:
-                                glyphs_to_keep.add(glyph)
-                                print(f"保留：{glyph} (U+{code:04X})")
-                        except (TypeError, ValueError):
-                                continue
-                    print(f"\n共找到 {len(glyphs_to_keep)} 个国旗字形")
-                    for glyph in font:
-                        if glyph not in glyphs_to_keep: 
-                            font.selection[glyph] = False
-                        else:
-                            font.selection[glyph] = True
-                    font.generate("dist/TwemojiCountryFlags.ttf", flags=("opentype"))
-                    font.close()
-                    print("✅ FontForge 子集化完成")
-                    PYEOF
-                    fontforge -script subset_colr.py
-                    echo "转换为 WOFF2 格式..."
-                    woff2_compress "dist/TwemojiCountryFlags.ttf"
-                    mv "dist/TwemojiCountryFlags.ttf.woff2" "dist/TwemojiCountryFlags.woff2"
-                    echo "📊 构建结果:"
-                    ls -lh dist/
+                  set -euo pipefail
+                  mkdir -p dist
 
-                    echo "🔍 字体验证:"
-                    python3 << 'PYYEOF'
-                    from fontTools.ttLib import TTFont
-                    try:
-                        font = TTFont('dist/TwemojiCountryFlags.woff2')
-                        glyph_count = len(font.getGlyphOrder())
-                        print(f'✅ 字体有效，包含 {glyph_count} 个字形')
-                        font.close()
-                        if glyph_count < 50 or glyph_count > 500:
-                            print('⚠️ 字形数量异常，请检查子集化结果')
-                        except Exception as e:
-                            print('❌ 字体验证失败:', e)
-                            exit(1)
-                    PYYEOF
+                  echo "🧩 生成区域指示符两两组合文本，用于触发旗帜 GSUB/ligature 闭包..."
+                  python3 << 'PYEOF'
+                  chars = [chr(cp) for cp in range(0x1F1E6, 0x1F200)]
+                  with open("flags.txt", "w", encoding="utf-8") as f:
+                      for a in chars:
+                          for b in chars:
+                              f.write(a + b + "\n")
+                  print("✅ flags.txt 已生成")
+                  PYEOF
+
+                  echo "✂️ 使用 pyftsubset 直接对子集化并输出 WOFF2..."
+                  pyftsubset "build/Twemoji Mozilla.ttf" \
+                    --text-file=flags.txt \
+                    --output-file="dist/${{ env.FONT_NAME }}.woff2" \
+                    --flavor=woff2 \
+                    --layout-features='*' \
+                    --glyph-names \
+                    --symbol-cmap \
+                    --legacy-cmap \
+                    --notdef-glyph \
+                    --notdef-outline \
+                    --recommended-glyphs \
+                    --name-IDs='*' \
+                    --name-legacy \
+                    --retain-gids \
+                    --verbose
+
+                  cp "build/Twemoji Mozilla.ttf" "dist/${{ env.FONT_NAME }}.ttf"
+
+                  echo "📊 构建结果:"
+                  ls -lh dist/
+
+                  echo "🔍 字体验证:"
+                  python3 << 'PYYEOF'
+                  from fontTools.ttLib import TTFont
+
+                  path = "dist/${{ env.FONT_NAME }}.woff2"
+                  font = TTFont(path)
+                  glyph_count = len(font.getGlyphOrder())
+                  print(f"✅ 字体有效，包含 {glyph_count} 个字形")
+
+                  print("✅ 包含的表：", ", ".join(font.keys()))
+                  if "COLR" not in font:
+                      raise SystemExit("❌ 缺少 COLR 表")
+                  if "CPAL" not in font:
+                      raise SystemExit("❌ 缺少 CPAL 表")
+
+                  font.close()
+                  PYYEOF
 
             - name: 🚀 Create GitHub Release
               uses: softprops/action-gh-release@v2
