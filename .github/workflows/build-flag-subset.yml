@@ -64,14 +64,24 @@ jobs:
 
     - name: 🔨 Build full TTF font
       run: |
-        make -j$(nproc)
+        mkdir -p build build/raw-font dist
+        echo "🔧 开始串行构建字体（约 15-20 分钟）..."
+        make
+        echo "📊 构建结果:"
         ls -lh build/
         # 验证字体文件生成
-        file "build/Twemoji Mozilla.ttf"
+        if [ -f "build/Twemoji Mozilla.ttf" ]; then
+          echo "✅ 字体文件生成成功"
+          file "build/Twemoji Mozilla.ttf"
+        else
+          echo "❌ 字体文件生成失败"
+          exit 1
+        fi
 
     - name: ✂️ Extract flag emoji subset + convert to WOFF2
       run: |
         mkdir -p dist
+        echo "✂️ 提取国旗字符子集 (U+1F1E6-1F1FF)..."
         pyftsubset "build/Twemoji Mozilla.ttf" \
           --unicodes=${{ env.UNICODE_RANGE }} \
           --output-file="dist/${{ env.FONT_NAME }}.woff2" \
