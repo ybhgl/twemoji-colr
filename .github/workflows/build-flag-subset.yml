@@ -25,11 +25,6 @@ jobs:
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
 
-    - name: 🐍 Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-
     - name: 🟢 Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -40,21 +35,39 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          fontforge \
-          python3-fontforge \
-          fonttools \
-          brotli \
-          woff2 \
-          perl \
-          make
+        fontforge \
+        python3-fontforge \
+        fonttools \
+        brotli \
+        woff2 \
+        perl \
+        make \
+        python3-pip
+    
+    - name: 🔍 Verify Python environment
+      run: |
+        echo "=== Python Info ==="
+        which python3
+        python3 --version
+        python3 -c "import sys; print('Python path:', sys.executable)"
+        echo "=== Fontforge Module ==="
+        python3 -c "import fontforge; print('Fontforge version:', fontforge.version())"
 
     - name: 📦 Install npm dependencies
-      run: npm ci
+      run: |
+        if [ -f "package-lock.json" ] || [ -f "npm-shrinkwrap.json" ]; then
+          npm ci
+        else
+          echo "⚠️ 未检测到锁文件，使用 npm install"
+          npm install
+        fi
 
     - name: 🔨 Build full TTF font
       run: |
         make -j$(nproc)
         ls -lh build/
+        # 验证字体文件生成
+        file "build/Twemoji Mozilla.ttf"
 
     - name: ✂️ Extract flag emoji subset + convert to WOFF2
       run: |
