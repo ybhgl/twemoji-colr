@@ -97,7 +97,7 @@ jobs:
                   ls -lh dist/
 
                   echo "🔍 字体验证:"
-                  python3 -c "
+                  python3 << 'PYEOF'
                   from fontTools.ttLib import TTFont
                   try:
                       font = TTFont('dist/${{ env.FONT_NAME }}.woff2')
@@ -109,6 +109,7 @@ jobs:
                   except Exception as e:
                       print('❌ 字体验证失败:', e)
                       exit(1)
+                  PYEOF
 
             - name: 🚀 Create GitHub Release
               uses: softprops/action-gh-release@v2
