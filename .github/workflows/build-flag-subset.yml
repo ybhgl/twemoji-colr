@@ -90,7 +90,7 @@ jobs:
                     print("打开字体文件...")
                     font = fontforge.open("build/Twemoji Mozilla.ttf")
                     flag_start = 0x1F1E6
-                    flag_end = 0x1F1FF
+                    flag_end = 0x1F200
                     glyphs_to_keep = set()
                     for glyph in font:
                         try:
@@ -98,15 +98,14 @@ jobs:
                             if flag_start <= code <= flag_end:
                                 glyphs_to_keep.add(glyph)
                                 print(f"保留：{glyph} (U+{code:04X})")
-                            except:
-                                pass
+                        except (TypeError, ValueError):
+                                continue
                     print(f"\n共找到 {len(glyphs_to_keep)} 个国旗字形")
                     for glyph in font:
-                        if glyph not in glyphs_to_keep:
-                            try:
-                                font.selection[glyph] = False
-                            except:
-                                pass
+                        if glyph not in glyphs_to_keep: 
+                            font.selection[glyph] = False
+                        else:
+                            font.selection[glyph] = True
                     font.generate("dist/TwemojiCountryFlags.ttf", flags=("opentype"))
                     font.close()
                     print("✅ FontForge 子集化完成")
