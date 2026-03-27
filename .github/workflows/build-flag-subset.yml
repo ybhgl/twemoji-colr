@@ -83,8 +83,8 @@ jobs:
 
             - name: ✂️ Extract flag emoji subset + convert to WOFF2
               run: |
-                  mkdir -p dist
-                  cat > subset_colr.py << 'PYEOF'
+                    mkdir -p dist
+                    cat > subset_colr.py << 'PYEOF'
                     import fontforge
                     import sys
                     print("打开字体文件...")
@@ -115,23 +115,23 @@ jobs:
                     echo "转换为 WOFF2 格式..."
                     woff2_compress "dist/TwemojiCountryFlags.ttf"
                     mv "dist/TwemojiCountryFlags.ttf.woff2" "dist/TwemojiCountryFlags.woff2"
-                  echo "📊 构建结果:"
-                  ls -lh dist/
+                    echo "📊 构建结果:"
+                    ls -lh dist/
 
-                  echo "🔍 字体验证:"
-                  python3 << 'PYEOF'
-                  from fontTools.ttLib import TTFont
-                  try:
-                      font = TTFont('dist/TwemojiCountryFlags.woff2')
-                      glyph_count = len(font.getGlyphOrder())
-                      print(f'✅ 字体有效，包含 {glyph_count} 个字形')
-                      font.close()
-                      if glyph_count < 50 or glyph_count > 500:
-                          print('⚠️ 字形数量异常，请检查子集化结果')
-                  except Exception as e:
-                      print('❌ 字体验证失败:', e)
-                      exit(1)
-                  PYEOF
+                    echo "🔍 字体验证:"
+                    python3 << 'PYYEOF'
+                    from fontTools.ttLib import TTFont
+                    try:
+                        font = TTFont('dist/TwemojiCountryFlags.woff2')
+                        glyph_count = len(font.getGlyphOrder())
+                        print(f'✅ 字体有效，包含 {glyph_count} 个字形')
+                        font.close()
+                        if glyph_count < 50 or glyph_count > 500:
+                            print('⚠️ 字形数量异常，请检查子集化结果')
+                        except Exception as e:
+                            print('❌ 字体验证失败:', e)
+                            exit(1)
+                    PYYEOF
 
             - name: 🚀 Create GitHub Release
               uses: softprops/action-gh-release@v2
