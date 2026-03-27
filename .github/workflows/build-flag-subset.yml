@@ -65,7 +65,7 @@ jobs:
     - name: 🔨 Build full TTF font
       run: |
         mkdir -p build build/raw-font dist
-        echo "🔧 开始串行构建字体（约 15-20 分钟）..."
+        echo "🔧 开始串行构建字体..."
         make
         echo "📊 构建结果:"
         ls -lh build/
@@ -86,7 +86,7 @@ jobs:
           --unicodes=${{ env.UNICODE_RANGE }} \
           --output-file="dist/${{ env.FONT_NAME }}.woff2" \
           --flavor=woff2 \
-          --hinting-font=none \
+          --hinting-tables=none \
           --no-subset-tables+=name,cmap,head,hhea,hmtx,maxp,OS/2,post \
           --verbose
         cp "build/Twemoji Mozilla.ttf" "dist/${{ env.FONT_NAME }}.ttf"
