@@ -73,9 +73,9 @@ jobs:
                   echo "📊 构建结果:"
                   ls -lh build/
                   # 验证字体文件生成
-                  if [ -f "build/${{ env.FONT_NAME }}.ttf" ]; then
+                  if [ -f "build/Twemoji Mozilla.ttf" ]; then
                     echo "✅ 字体文件生成成功"
-                    file "build/${{ env.FONT_NAME }}.ttf"
+                    file "build/Twemoji Mozilla.ttf"
                   else
                     echo "❌ 字体文件生成失败"
                     exit 1
