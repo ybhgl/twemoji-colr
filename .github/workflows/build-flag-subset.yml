@@ -1,0 +1,99 @@
+name: 🚩 Build Flag Emoji Subset & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      twemoji_version:
+        description: 'Twemoji source version (optional)'
+        required: false
+        default: '17.0.2'
+
+env:
+  FONT_NAME: TwemojiCountryFlags
+  UNICODE_RANGE: U+1F1E6-1F1FF
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: 🔧 Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          fontforge \
+          python3-fontforge \
+          fonttools \
+          brotli \
+          woff2 \
+          perl \
+          make
+
+    - name: 📦 Install npm dependencies
+      run: npm ci
+
+    - name: 🔨 Build full TTF font
+      run: |
+        make -j$(nproc)
+        ls -lh build/
+
+    - name: ✂️ Extract flag emoji subset + convert to WOFF2
+      run: |
+        mkdir -p dist
+        pyftsubset "build/Twemoji Mozilla.ttf" \
+          --unicodes=${{ env.UNICODE_RANGE }} \
+          --output-file="dist/${{ env.FONT_NAME }}.woff2" \
+          --flavor=woff2 \
+          --hinting-font=none \
+          --no-subset-tables+=name,cmap,head,hhea,hmtx,maxp,OS/2,post \
+          --verbose
+        cp "build/Twemoji Mozilla.ttf" "dist/${{ env.FONT_NAME }}.ttf"
+        echo "📊 构建结果:"
+        ls -lh dist/
+
+    - name: 🚀 Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.event.inputs.version }}
+        name: "🚩 ${{ env.FONT_NAME }} ${{ github.event.inputs.version }}"
+        body: |
+          ## 📦 字体信息
+          - 源项目：[win98se/twemoji-colr](https://github.com/win98se/twemoji-colr)
+          - Twemoji 版本：${{ github.event.inputs.twemoji_version }}
+          - Unicode 范围：${{ env.UNICODE_RANGE }} (Flag Emoji)
+          - 格式：WOFF2 (压缩) + TTF (完整备份)
+          
+          ## 🔗 CDN 使用示例
+          ```css
+          @font-face {
+            font-family: 'Windows11FlagFix';
+            src: url('https://cdn.jsdelivr.net/gh/${{ github.repository_owner }}/twemoji-colr@${{ github.event.inputs.version }}/dist/${{ env.FONT_NAME }}.woff2') format('woff2');
+            unicode-range: U+1F1E6-1F1FF;
+          }
+          ```
+        files: |
+          dist/${{ env.FONT_NAME }}.woff2
+          dist/${{ env.FONT_NAME }}.ttf
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
