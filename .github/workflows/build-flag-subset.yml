@@ -90,7 +90,7 @@ jobs:
                     --output-file="dist/${{ env.FONT_NAME }}.woff2" \
                     --flavor=woff2 \
                     --no-layout-closure \
-                    --preserve-name-ids \
+                    --hinting-tables=none \
                     --verbose
                   cp "build/Twemoji Mozilla.ttf" "dist/${{ env.FONT_NAME }}.ttf"
                   echo "📊 构建结果:"
